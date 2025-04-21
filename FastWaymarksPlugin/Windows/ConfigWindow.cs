@@ -3,11 +3,13 @@ using System.Numerics;
 using Dalamud.Interface.Windowing;
 using ImGuiNET;
 
-namespace SamplePlugin.Windows;
+namespace FastWaymarksPlugin.Windows;
 
 public class ConfigWindow : Window, IDisposable
 {
-    private Configuration Configuration;
+#pragma warning disable IDE1006 // Naming Styles
+    private readonly Configuration Configuration;
+#pragma warning restore IDE1006 // Naming Styles
 
     // We give this window a constant ID using ###
     // This allows for labels being dynamic, like "{FPS Counter}fps###XYZ counter window",

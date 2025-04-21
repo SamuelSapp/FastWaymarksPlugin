@@ -1,27 +1,39 @@
-﻿using Dalamud.Game.Command;
+﻿using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
+using System.IO;
+using Dalamud.Game.Command;
+using Dalamud.Interface.Textures.TextureWraps;
+using Dalamud.Interface.Windowing;
 using Dalamud.IoC;
 using Dalamud.Plugin;
-using System.IO;
-using Dalamud.Interface.Windowing;
 using Dalamud.Plugin.Services;
-using SamplePlugin.Windows;
+using Dalamud.Utility;
+using FFXIVClientStructs.FFXIV.Client.UI.Misc;
+using ImGuiNET;
+using Newtonsoft.Json;
+using FastWaymarksPlugin.Windows;
 
-namespace SamplePlugin;
+namespace FastWaymarksPlugin;
 
 public sealed class Plugin : IDalamudPlugin
 {
-    [PluginService] internal static IDalamudPluginInterface PluginInterface { get; private set; } = null!;
-    [PluginService] internal static ITextureProvider TextureProvider { get; private set; } = null!;
-    [PluginService] internal static ICommandManager CommandManager { get; private set; } = null!;
-    [PluginService] internal static IClientState ClientState { get; private set; } = null!;
-    [PluginService] internal static IDataManager DataManager { get; private set; } = null!;
-    [PluginService] internal static IPluginLog Log { get; private set; } = null!;
+    [PluginService] public static IDalamudPluginInterface PluginInterface { get; private set; } = null!;
+    [PluginService] public static IDataManager Data { get; private set; } = null!;
+    [PluginService] public static ITextureProvider Texture { get; private set; } = null!;
+    [PluginService] public static ICommandManager Commands { get; private set; } = null!;
+    [PluginService] public static IClientState ClientState { get; private set; } = null!;
+    [PluginService] public static IChatGui ChatGui { get; private set; } = null!;
+    [PluginService] public static IGameGui GameGui { get; private set; } = null!;
+    [PluginService] public static IPluginLog Log { get; private set; } = null!;
+    [PluginService] public static ICondition Condition { get; private set; } = null!;
 
     private const string CommandName = "/pmycommand";
 
     public Configuration Configuration { get; init; }
 
-    public readonly WindowSystem WindowSystem = new("SamplePlugin");
+    public readonly WindowSystem WindowSystem = new("FastWaymarksPlugin");
     private ConfigWindow ConfigWindow { get; init; }
     private MainWindow MainWindow { get; init; }
 
@@ -38,7 +50,9 @@ public sealed class Plugin : IDalamudPlugin
         WindowSystem.AddWindow(ConfigWindow);
         WindowSystem.AddWindow(MainWindow);
 
-        CommandManager.AddHandler(CommandName, new CommandInfo(OnCommand)
+        ZoneInfoHandler.Init();
+
+        Commands.AddHandler(CommandName, new CommandInfo(OnCommand)
         {
             HelpMessage = "A useful message to display in /xlhelp"
         });
@@ -54,7 +68,7 @@ public sealed class Plugin : IDalamudPlugin
 
         // Add a simple message to the log with level set to information
         // Use /xllog to open the log window in-game
-        // Example Output: 00:57:54.959 | INF | [SamplePlugin] ===A cool log message from Sample Plugin===
+        // Example Output: 00:57:54.959 | INF | [FastWaymarksPlugin] ===A cool log message from Sample Plugin===
         Log.Information($"===A cool log message from {PluginInterface.Manifest.Name}===");
     }
 
@@ -65,7 +79,7 @@ public sealed class Plugin : IDalamudPlugin
         ConfigWindow.Dispose();
         MainWindow.Dispose();
 
-        CommandManager.RemoveHandler(CommandName);
+        Commands.RemoveHandler(CommandName);
     }
 
     private void OnCommand(string command, string args)
