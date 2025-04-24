@@ -127,8 +127,115 @@ internal sealed class ScratchPreset
         Waymarks.Last().Label = "4";
     }
 
-    public WaymarkPreset GetPreset()
+    public WaymarkPreset GetPreset(int presetOrder)
     {
+        int[] PO = {0,1,2,3,4,5,6,7};
+        
+        switch(presetOrder)
+        {
+            case 0:
+                //Proper Order 
+                //(A 1 B 2 C 3 D 4)
+                //(0 1 2 3 4 5 6 7)
+                PO = [0, 2, 4, 6, 1, 3, 5, 7];
+                break;
+            case 1:
+                //Party Finder Order
+                //(A 2 B 3 C 4 D 1)
+                //(0 1 2 3 4 5 6 7)
+                PO = [0, 2, 4, 6, 7, 1, 3, 5];
+                break;
+            case 3:
+                //Letter-Number Order
+                //(A B C D 1 2 3 4)
+                //(0 1 2 3 4 5 6 7)
+                PO = [0, 1, 2, 3, 4, 5, 6, 7];
+                break;
+        }
+        
+
+        WaymarkPreset newPreset = new()
+        {
+            Name = Name,
+            MapID = MapID,
+            A =
+            {
+                X = Waymarks[PO[0]].X,
+                Y = Waymarks[PO[0]].Y,
+                Z = Waymarks[PO[0]].Z,
+                ID = Waymarks[PO[0]].ID,
+                Active = Waymarks[PO[0]].Active
+            },
+            B =
+            {
+                X = Waymarks[PO[1]].X,
+                Y = Waymarks[PO[1]].Y,
+                Z = Waymarks[PO[1]].Z,
+                ID = Waymarks[PO[1]].ID,
+                Active = Waymarks[PO[1]].Active
+            },
+            C =
+            {
+                X = Waymarks[PO[2]].X,
+                Y = Waymarks[PO[2]].Y,
+                Z = Waymarks[PO[2]].Z,
+                ID = Waymarks[PO[2]].ID,
+                Active = Waymarks[PO[2]].Active
+            },
+            D =
+            {
+                X = Waymarks[PO[3]].X,
+                Y = Waymarks[PO[3]].Y,
+                Z = Waymarks[PO[3]].Z,
+                ID = Waymarks[PO[3]].ID,
+                Active = Waymarks[PO[3]].Active
+            },
+            One =
+            {
+                X = Waymarks[PO[4]].X,
+                Y = Waymarks[PO[4]].Y,
+                Z = Waymarks[PO[4]].Z,
+                ID = Waymarks[PO[4]].ID,
+                Active = Waymarks[PO[4]].Active
+            },
+            Two =
+            {
+                X = Waymarks[PO[5]].X,
+                Y = Waymarks[PO[5]].Y,
+                Z = Waymarks[PO[5]].Z,
+                ID = Waymarks[PO[5]].ID,
+                Active = Waymarks[PO[5]].Active
+            },
+            Three =
+            {
+                X = Waymarks[PO[6]].X,
+                Y = Waymarks[PO[6]].Y,
+                Z = Waymarks[PO[6]].Z,
+                ID = Waymarks[PO[6]].ID,
+                Active = Waymarks[PO[6]].Active
+            },
+            Four =
+            {
+                X = Waymarks[PO[7]].X,
+                Y = Waymarks[PO[7]].Y,
+                Z = Waymarks[PO[7]].Z,
+                ID = Waymarks[PO[7]].ID,
+                Active = Waymarks[PO[7]].Active
+            }
+        };
+
+        return newPreset;
+    }
+
+    /*
+    public WaymarkPreset GetPreset(int presetOrder)
+    {
+        var PO = new int[0,1,2,3,4,5,6,7];
+        switch(presetOrder)
+        {
+
+        }
+
         WaymarkPreset newPreset = new()
         {
             Name = Name,
@@ -201,4 +308,5 @@ internal sealed class ScratchPreset
 
         return newPreset;
     }
+    */
 }

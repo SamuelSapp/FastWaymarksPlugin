@@ -14,6 +14,7 @@ public static class MemoryHandler
 {
 	//	Magic Numbers
     public const int MaxPresetSlotNum = 30;
+		public const int YalmScalar = 1000;
 
     public static unsafe FieldMarkerPreset ReadSlot(uint slotNum)
 	{
@@ -39,10 +40,10 @@ public static class MemoryHandler
 		var currentContentLinkType = (byte) EventFramework.GetCurrentContentType();
 		Plugin.Log.Debug($"Player is not null: {Plugin.ClientState.LocalPlayer != null}\r\n" +
 										$"Player is not in combat: {!Plugin.Condition[ConditionFlag.InCombat]}\r\n" +
-										$"Content Link Type is 1-3: {currentContentLinkType is > 0 and < 4}\r\n" +
-										$"Content Line Type is: {currentContentLinkType}\r\n" +
-										$"Is Safe to Direct Place: {Plugin.ClientState.LocalPlayer != null && !Plugin.Condition[ConditionFlag.InCombat] && currentContentLinkType is > 0 and < 4}");
-		return Plugin.ClientState.LocalPlayer != null && !Plugin.Condition[ConditionFlag.InCombat] && currentContentLinkType is > 0 and < 4;
+										$"Content Link Type is 1-3: {currentContentLinkType is >= 0 and < 4}\r\n" +
+										$"Content Link Type is: {currentContentLinkType}\r\n" +
+										$"Is Safe to Direct Place: {Plugin.ClientState.LocalPlayer != null && !Plugin.Condition[ConditionFlag.InCombat] && currentContentLinkType is >= 0 and < 4}");
+		return Plugin.ClientState.LocalPlayer != null && !Plugin.Condition[ConditionFlag.InCombat] && currentContentLinkType is >= 0 and < 4;
 	}
 
 	public static void PlacePreset(FieldMarkerPreset preset)
@@ -50,60 +51,76 @@ public static class MemoryHandler
 		DirectPlacePreset(preset);
 	}
 
-    private static unsafe void DirectPlacePreset(FieldMarkerPreset preset)
-    {
-        if (!IsSafeToDirectPlacePreset())
-            return;
-
-        var bitArray = new BitArray(new[] {preset.ActiveMarkers});
-
-        var placementStruct = new MarkerPresetPlacement();
-        foreach (var idx in Enumerable.Range(0,8))
-        {
-            placementStruct.Active[idx] = bitArray[idx];
-            placementStruct.X[idx] = preset.Markers[idx].X;
-            placementStruct.Y[idx] = preset.Markers[idx].Y;
-            placementStruct.Z[idx] = preset.Markers[idx].Z;
-        }
-				Plugin.Log.Debug($"Data of FieldMarkerPreset:\r\n" +
-			                 $"Territory: {Plugin.ClientState.TerritoryType}\r\n" +
-			                 $"ContentFinderCondition: {preset.ContentFinderConditionId}\r\n" +
-			                 $"Waymark Struct:\r\n{preset.AsString()}");
-				
-				Plugin.Log.Debug($"Data of MarkerPresetPlacement:\r\n" +
-			                 $"Waymark Struct:\r\n{placementStruct.AsString()}");
-        MarkingController.Instance()->PlacePreset(&placementStruct);
-    }
-
-		public static void TestPlacePreset()
-		{
-			TestDirectPlacePreset();
-		}
-		private static unsafe void TestDirectPlacePreset()
-		{
+	private static unsafe void DirectPlacePreset(FieldMarkerPreset preset)
+	{
 			if (!IsSafeToDirectPlacePreset())
-				return;
-			
-			var testMarker = new MarkerPresetPlacement();
+					return;
 
-			var bitArray = new BitField8();
+			var bitArray = new BitArray(new[] {preset.ActiveMarkers});
 
-			foreach (var idx in Enumerable.Range(1,8))
+			var placementStruct = new MarkerPresetPlacement();
+			foreach (var idx in Enumerable.Range(0,8))
 			{
-					testMarker.Active[idx] = bitArray[idx];
-					testMarker.X[idx] = 0;
-					testMarker.Y[idx] = 0;
-					testMarker.Z[idx] = 0;
+					placementStruct.Active[idx] = bitArray[idx];
+					placementStruct.X[idx] = preset.Markers[idx].X;
+					placementStruct.Y[idx] = preset.Markers[idx].Y;
+					placementStruct.Z[idx] = preset.Markers[idx].Z;
 			}
-			bitArray[0] = true;
+			Plugin.Log.Debug($"Data of FieldMarkerPreset:\r\n" +
+											$"Territory: {Plugin.ClientState.TerritoryType}\r\n" +
+											$"ContentFinderCondition: {preset.ContentFinderConditionId}\r\n" +
+											$"Waymark Struct:\r\n{preset.AsString()}");
+			
+			Plugin.Log.Debug($"Data of MarkerPresetPlacement:\r\n" +
+											$"Waymark Struct:\r\n{placementStruct.AsString()}");
+			MarkingController.Instance()->PlacePreset(&placementStruct);
+	}
 
-			testMarker.Active[0] = bitArray[0];
-			testMarker.X[0] = 0;
-			testMarker.Y[0] = 0;
-			testMarker.Z[0] = 0;
+	public static void TestPlacePreset(FieldMarkerPreset preset)
+	{
+		TestDirectPlacePreset(preset);
+	}
+	private static unsafe void TestDirectPlacePreset(FieldMarkerPreset preset)
+	{
+		if (!IsSafeToDirectPlacePreset())
+					return;
 
-			MarkingController.Instance()->PlacePreset(&testMarker);
-		}
+			var bitArray = new BitArray(new[] {preset.ActiveMarkers});
+
+			var placementStruct = new MarkerPresetPlacement();
+			foreach (var idx in Enumerable.Range(0,8))
+			{
+					placementStruct.Active[idx] = true;
+					placementStruct.X[idx] = CalculateX(idx);
+					placementStruct.Y[idx] = CalculateY(idx);
+					placementStruct.Z[idx] = CalculateZ(idx);
+			}
+			Plugin.Log.Debug($"Data of FieldMarkerPreset:\r\n" +
+											$"Territory: {Plugin.ClientState.TerritoryType}\r\n" +
+											$"ContentFinderCondition: {preset.ContentFinderConditionId}\r\n" +
+											$"Waymark Struct:\r\n{preset.AsString()}");
+			
+			Plugin.Log.Debug($"Data of MarkerPresetPlacement:\r\n" +
+											$"Waymark Struct:\r\n{placementStruct.AsString()}");
+			MarkingController.Instance()->PlacePreset(&placementStruct);
+	}
+	
+	private static int CalculateX(int idx)
+	{
+		return 0*YalmScalar;
+	}
+
+	private static int CalculateY(int idx)
+	{
+		var worldYPos = Plugin.ClientState.LocalPlayer.Position.Y;
+		var waymarkYPos = (int)(worldYPos*YalmScalar);
+		return waymarkYPos;
+	}
+
+	private static int CalculateZ(int idx)
+	{
+		return 0*YalmScalar;
+	}
 
 	public static unsafe bool GetCurrentWaymarksAsPresetData(ref FieldMarkerPreset rPresetData)
 	{
@@ -125,9 +142,9 @@ public static class MemoryHandler
 			rPresetData.Timestamp = (int)DateTimeOffset.UtcNow.ToUnixTimeSeconds();
 
 			Plugin.Log.Debug($"Obtained current waymarks with the following data:\r\n" +
-			                 $"Territory: {Plugin.ClientState.TerritoryType}\r\n" +
-			                 $"ContentFinderCondition: {rPresetData.ContentFinderConditionId}\r\n" +
-			                 $"Waymark Struct:\r\n{rPresetData.AsString()}");
+											$"Territory: {Plugin.ClientState.TerritoryType}\r\n" +
+											$"ContentFinderCondition: {rPresetData.ContentFinderConditionId}\r\n" +
+											$"Waymark Struct:\r\n{rPresetData.AsString()}");
 			return true;
 		}
 
