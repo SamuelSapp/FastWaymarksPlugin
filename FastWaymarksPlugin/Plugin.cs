@@ -29,7 +29,7 @@ public sealed class Plugin : IDalamudPlugin
     [PluginService] public static IPluginLog Log { get; private set; } = null!;
     [PluginService] public static ICondition Condition { get; private set; } = null!;
 
-    private const string CommandName = "/pmycommand";
+    private static readonly string[] CommandList = new[] { "/fw", "/fastwaymarks" };
 
     public Configuration Configuration { get; init; }
 
@@ -41,21 +41,22 @@ public sealed class Plugin : IDalamudPlugin
     {
         Configuration = PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
 
-        // you might normally want to embed resources and load them from the manifest stream
-        var goatImagePath = Path.Combine(PluginInterface.AssemblyLocation.Directory?.FullName!, "goat.png");
-
         ConfigWindow = new ConfigWindow(this);
-        MainWindow = new MainWindow(this, goatImagePath);
+        MainWindow = new MainWindow(this);
 
         WindowSystem.AddWindow(ConfigWindow);
         WindowSystem.AddWindow(MainWindow);
 
         ZoneInfoHandler.Init();
 
-        Commands.AddHandler(CommandName, new CommandInfo(OnCommand)
+        foreach (var command in CommandList)
         {
-            HelpMessage = "A useful message to display in /xlhelp"
-        });
+            Commands.AddHandler(command, new CommandInfo(OnCommand)
+            {
+                HelpMessage = "Toggles main plugin window."
+            });
+        }
+        
 
         PluginInterface.UiBuilder.Draw += DrawUI;
 
@@ -79,7 +80,11 @@ public sealed class Plugin : IDalamudPlugin
         ConfigWindow.Dispose();
         MainWindow.Dispose();
 
-        Commands.RemoveHandler(CommandName);
+        foreach (var command in CommandList)
+        {
+            Commands.RemoveHandler(command);
+        }
+        
     }
 
     private void OnCommand(string command, string args)

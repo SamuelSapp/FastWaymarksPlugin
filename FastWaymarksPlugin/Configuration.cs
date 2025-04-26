@@ -15,7 +15,9 @@ public enum WaymarkOrder
 public enum WaymarkShape
 {
     Circle,
-    Square
+    Square,
+    Diamond,
+    Star
 }
 
 [Serializable]
@@ -29,6 +31,7 @@ public class Configuration : IPluginConfiguration
     public float WaymarksCenterX {get; set;} = 0f;
     public float WaymarksCenterZ {get; set;} = 0f;
     public float WaymarksRadius {get; set;} = 10f;
+    public float WaymarksRadiusB {get; set;} = 10f;
     public float WaymarksRotationOffset {get; set;} = 0f;
 
 

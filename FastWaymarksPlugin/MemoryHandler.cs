@@ -13,37 +13,19 @@ namespace FastWaymarksPlugin;
 public static class MemoryHandler
 {
 	//	Magic Numbers
-    public const int MaxPresetSlotNum = 30;
 		public const int YalmScalar = 1000;
 
-    public static unsafe FieldMarkerPreset ReadSlot(uint slotNum)
-	{
-		return FieldMarkerModule.Instance()->Presets[(int)slotNum-1];
-	}
-
-	public static unsafe bool WriteSlot(int slotNum, FieldMarkerPreset preset)
-	{
-		var module = FieldMarkerModule.Instance();
-		if (module->Presets.Length < slotNum)
-			return false;
-
-		Plugin.Log.Debug($"Attempting to write slot {slotNum} with data:\r\n{preset}");
-
-		// Zero-based index
-		var pointer = module->Presets.GetPointer(slotNum - 1);
-		*pointer = preset; // overwrite slot data
-		return true;
-	}
-
-	private static bool IsSafeToDirectPlacePreset()
+	public static bool IsSafeToDirectPlacePreset()
 	{
 		var currentContentLinkType = (byte) EventFramework.GetCurrentContentType();
+		/*
 		Plugin.Log.Debug($"Player is not null: {Plugin.ClientState.LocalPlayer != null}\r\n" +
 										$"Player is not in combat: {!Plugin.Condition[ConditionFlag.InCombat]}\r\n" +
-										$"Content Link Type is 1-3: {currentContentLinkType is >= 0 and < 4}\r\n" +
+										$"Content Link Type is 1-3: {currentContentLinkType is > 0 and < 3}\r\n" +
 										$"Content Link Type is: {currentContentLinkType}\r\n" +
-										$"Is Safe to Direct Place: {Plugin.ClientState.LocalPlayer != null && !Plugin.Condition[ConditionFlag.InCombat] && currentContentLinkType is >= 0 and < 4}");
-		return Plugin.ClientState.LocalPlayer != null && !Plugin.Condition[ConditionFlag.InCombat] && currentContentLinkType is >= 0 and < 4;
+										$"Is Safe to Direct Place: {Plugin.ClientState.LocalPlayer != null && !Plugin.Condition[ConditionFlag.InCombat] && currentContentLinkType is > 0 and < 3}");
+		*/
+		return Plugin.ClientState.LocalPlayer != null && !Plugin.Condition[ConditionFlag.InCombat] && currentContentLinkType is > 0 and < 3;
 	}
 
 	public static void PlacePreset(FieldMarkerPreset preset)
@@ -74,52 +56,6 @@ public static class MemoryHandler
 			Plugin.Log.Debug($"Data of MarkerPresetPlacement:\r\n" +
 											$"Waymark Struct:\r\n{placementStruct.AsString()}");
 			MarkingController.Instance()->PlacePreset(&placementStruct);
-	}
-
-	public static void TestPlacePreset(FieldMarkerPreset preset)
-	{
-		TestDirectPlacePreset(preset);
-	}
-	private static unsafe void TestDirectPlacePreset(FieldMarkerPreset preset)
-	{
-		if (!IsSafeToDirectPlacePreset())
-					return;
-
-			var bitArray = new BitArray(new[] {preset.ActiveMarkers});
-
-			var placementStruct = new MarkerPresetPlacement();
-			foreach (var idx in Enumerable.Range(0,8))
-			{
-					placementStruct.Active[idx] = true;
-					placementStruct.X[idx] = CalculateX(idx);
-					placementStruct.Y[idx] = CalculateY(idx);
-					placementStruct.Z[idx] = CalculateZ(idx);
-			}
-			Plugin.Log.Debug($"Data of FieldMarkerPreset:\r\n" +
-											$"Territory: {Plugin.ClientState.TerritoryType}\r\n" +
-											$"ContentFinderCondition: {preset.ContentFinderConditionId}\r\n" +
-											$"Waymark Struct:\r\n{preset.AsString()}");
-			
-			Plugin.Log.Debug($"Data of MarkerPresetPlacement:\r\n" +
-											$"Waymark Struct:\r\n{placementStruct.AsString()}");
-			MarkingController.Instance()->PlacePreset(&placementStruct);
-	}
-	
-	private static int CalculateX(int idx)
-	{
-		return 0*YalmScalar;
-	}
-
-	private static int CalculateY(int idx)
-	{
-		var worldYPos = Plugin.ClientState.LocalPlayer.Position.Y;
-		var waymarkYPos = (int)(worldYPos*YalmScalar);
-		return waymarkYPos;
-	}
-
-	private static int CalculateZ(int idx)
-	{
-		return 0*YalmScalar;
 	}
 
 	public static unsafe bool GetCurrentWaymarksAsPresetData(ref FieldMarkerPreset rPresetData)

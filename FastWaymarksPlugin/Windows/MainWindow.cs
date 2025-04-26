@@ -9,6 +9,7 @@ using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Misc;
 using ImGuiNET;
 using Lumina.Excel.Sheets;
+using Dalamud.Interface.Components;
 
 namespace FastWaymarksPlugin.Windows;
 
@@ -22,12 +23,12 @@ public class MainWindow : Window, IDisposable
 
     public WaymarkPreset testWaymarkPreset;
 
-    public MainWindow(Plugin plugin, string goatImagePath)
-        : base("My Amazing Window##With a hidden ID", ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse)
+    public MainWindow(Plugin plugin)
+        : base("Fast Waymarks##FastWaymarksMain", ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse)
     {
         SizeConstraints = new WindowSizeConstraints
         {
-            MinimumSize = new Vector2(375, 330),
+            MinimumSize = new Vector2(322, 247),
             MaximumSize = new Vector2(float.MaxValue, float.MaxValue)
         };
 
@@ -61,7 +62,7 @@ public class MainWindow : Window, IDisposable
 
             var orderNames = Enum.GetNames<WaymarkOrder>();
             var tempOrder = (int) Plugin.Configuration.Order;
-            if (ImGui.SliderInt("Waymarks Order", ref tempOrder, 0, orderNames.Length-1, $"{orderNames[tempOrder]}")) 
+            if (ImGui.SliderInt("Order", ref tempOrder, 0, orderNames.Length-1, $"{orderNames[tempOrder]}")) 
             {
                 Plugin.Configuration.Order = (WaymarkOrder) tempOrder;
                 Plugin.Configuration.Save();
@@ -79,21 +80,34 @@ public class MainWindow : Window, IDisposable
 
             var shapeNames = Enum.GetNames<WaymarkShape>();
             var tempShape = (int) Plugin.Configuration.Shape;
-            if (ImGui.SliderInt("Waymarks Shape", ref tempShape, 0, shapeNames.Length-1, $"{shapeNames[tempShape]}")) 
+            if (ImGui.SliderInt("Shape", ref tempShape, 0, shapeNames.Length-1, $"{shapeNames[tempShape]}")) 
             {
                 Plugin.Configuration.Shape = (WaymarkShape) tempShape;
                 Plugin.Configuration.Save();
             }
 
             var tempWaymarksCenter = new Vector2(Plugin.Configuration.WaymarksCenterX,Plugin.Configuration.WaymarksCenterZ);
-            if (ImGui.DragFloat2("Waymarks Center", ref tempWaymarksCenter, 0.01f, -1000, 1000))
+            if (ImGui.DragFloat2("Center", ref tempWaymarksCenter, 0.01f, -1000, 1000))
             {
                 Plugin.Configuration.WaymarksCenterX = tempWaymarksCenter.X;
                 Plugin.Configuration.WaymarksCenterZ = tempWaymarksCenter.Y;
                 Plugin.Configuration.Save();
             }
 
-            if (ImGui.Button("Center to Stage"))
+            if (ImGui.Button("Center on Player"))
+            {
+                var actor = Plugin.ClientState.LocalPlayer;
+                if (actor != null) 
+                {
+                    Plugin.Configuration.WaymarksCenterX = actor.Position.X;
+                    Plugin.Configuration.WaymarksCenterZ = actor.Position.Z;
+                    Plugin.Configuration.Save();
+                }
+            }
+
+            ImGui.SameLine();
+
+            if (ImGui.Button("Center to Arena"))
             {
                 var actor = Plugin.ClientState.LocalPlayer;
                 if (actor != null) 
@@ -113,28 +127,31 @@ public class MainWindow : Window, IDisposable
 
             ImGui.SameLine();
 
-            if (ImGui.Button("Center on Player"))
+            ImGuiComponents.HelpMarker("May not work for irregularly-shaped arenas", Dalamud.Interface.FontAwesomeIcon.QuestionCircle);
+
+            ImGui.NewLine();
+
+            if (Plugin.Configuration.Shape == WaymarkShape.Star)
             {
-                var actor = Plugin.ClientState.LocalPlayer;
-                if (actor != null) 
+                var tempWaymarksRadii = new Vector2(Plugin.Configuration.WaymarksRadius, Plugin.Configuration.WaymarksRadiusB);
+                if (ImGui.DragFloat2("Radii", ref tempWaymarksRadii, 0.01f, 0, 50))
                 {
-                    Plugin.Configuration.WaymarksCenterX = actor.Position.X;
-                    Plugin.Configuration.WaymarksCenterZ = actor.Position.Z;
+                    Plugin.Configuration.WaymarksRadius = tempWaymarksRadii.X;
+                    Plugin.Configuration.WaymarksRadiusB = tempWaymarksRadii.Y;
+                    Plugin.Configuration.Save();
+                }
+            } else 
+            {
+                var tempWaymarksRadius = Plugin.Configuration.WaymarksRadius;
+                if (ImGui.DragFloat("Radius", ref tempWaymarksRadius, 0.01f, 0, 50))
+                {
+                    Plugin.Configuration.WaymarksRadius = tempWaymarksRadius;
                     Plugin.Configuration.Save();
                 }
             }
 
-            ImGui.NewLine();
-
-            var tempWaymarksRadius = Plugin.Configuration.WaymarksRadius;
-            if (ImGui.DragFloat("Waymarks Radius", ref tempWaymarksRadius, 0.01f, 0, 50))
-            {
-                Plugin.Configuration.WaymarksRadius = tempWaymarksRadius;
-                Plugin.Configuration.Save();
-            }
-
             var tempWaymarksRotationOffset = Plugin.Configuration.WaymarksRotationOffset;
-            if (ImGui.SliderFloat("Waymarks Rotation", ref tempWaymarksRotationOffset, 0f, 360f, $"{tempWaymarksRotationOffset,8:##0.0}"))
+            if (ImGui.SliderFloat("Rotation", ref tempWaymarksRotationOffset, 0f, 360f, $"{tempWaymarksRotationOffset,8:##0.0}"))
             {
                 Plugin.Configuration.WaymarksRotationOffset = tempWaymarksRotationOffset;
                 Plugin.Configuration.Save();
@@ -146,13 +163,19 @@ public class MainWindow : Window, IDisposable
                 Plugin.ToggleConfigUI();
             }
             */
-
+            if (!MemoryHandler.IsSafeToDirectPlacePreset()) ImGui.BeginDisabled();
+            
             if (ImGui.Button("Place Waymarks"))
             {
                 preparePreset();
                 testWaymarkPreset = ScratchEditingPreset.GetPreset((int)Plugin.Configuration.Order);
                 MemoryHandler.PlacePreset(testWaymarkPreset.GetAsGamePreset());
             }
+            ImGui.EndDisabled();
+
+            ImGui.SameLine();
+
+            ImGuiComponents.HelpMarker("Fast Waymarks are only placeable within instanced zones", Dalamud.Interface.FontAwesomeIcon.QuestionCircle);
 
             /*
             if (ImGui.Button("Save Waymarks"))
@@ -177,7 +200,14 @@ public class MainWindow : Window, IDisposable
 
     private void preparePreset() 
     {
-        var playerPos = Plugin.ClientState.LocalPlayer.Position;
+        Vector3 playerPos;
+        if (Plugin.ClientState.LocalPlayer != null)
+        {
+            playerPos = Plugin.ClientState.LocalPlayer.Position;
+        } else
+        {
+            playerPos = new Vector3(0f,0f,0f);
+        }
         for (int i = 0; i < 8; i++)
         {
             var tempCoord = new Vector3(calculateX(i), playerPos.Y, calculateZ(i));
@@ -199,26 +229,56 @@ public class MainWindow : Window, IDisposable
     private float calculateX(int idx)
     {
         var tempX = 0f;
-        switch((int)Plugin.Configuration.Shape)
+        var startX = Plugin.Configuration.WaymarksCenterX;
+        var rotationOffset = (float)((2*Math.PI*Plugin.Configuration.WaymarksRotationOffset/360f)-Math.PI/2);
+        var rotation = (float)Math.Cos((2*Math.PI*(idx/8f)) + rotationOffset);
+        var radius = Plugin.Configuration.WaymarksRadius;
+        var radiusB = Plugin.Configuration.WaymarksRadiusB;
+        var squareCornerRadius = (float)(radius/Math.Cos(Math.PI/4));
+        switch(Plugin.Configuration.Shape)
         {
-            case 0:
+            case WaymarkShape.Circle:
                 //Circle
-                var startX = Plugin.Configuration.WaymarksCenterX;
-                var rotationOffset = (float)((2*Math.PI*Plugin.Configuration.WaymarksRotationOffset/360f)-Math.PI/2);
-                var preRotation = (float)Math.Cos((2*Math.PI*(idx/8f))+rotationOffset);
-                var radius = Plugin.Configuration.WaymarksRadius;
-                tempX = startX + preRotation*radius;
-                Plugin.Log.Debug($"Data of Waymark {idx}:\r\n" +
+                tempX = startX + (rotation * radius);
+            break;
+            case WaymarkShape.Square:
+                //Square
+                if (idx%2 == 0)
+                {
+                    tempX = startX + (rotation * radius);
+                } else
+                {
+                    tempX = startX + (rotation * squareCornerRadius);
+                }
+            break;
+            case WaymarkShape.Diamond:
+                //Diamond
+                if (idx%2 == 0)
+                {
+                    tempX = startX + (rotation * squareCornerRadius);
+                    
+                } else
+                {
+                    tempX = startX + (rotation * radius);
+                }
+            break;
+            case WaymarkShape.Star:
+                //Star
+                if (idx%2 == 0)
+                {
+                    tempX = startX + (rotation * radius);
+                } else
+                {
+                    tempX = startX + (rotation * radiusB);
+                }
+            break;
+        }
+        Plugin.Log.Debug($"Data of Waymark {idx}:\r\n" +
                                 $"startX: {startX}\r\n" +
-                                $"preRotation: {preRotation}\r\n" +
+                                $"rotation: {rotation}\r\n" +
                                 $"rotationOffset: {rotationOffset}\r\n" +
                                 $"radius: {radius}\r\n" +
                                 $"combined: {tempX}");
-            break;
-            case 1:
-                //Square
-            break;
-        }
         
         return tempX;
     }
@@ -226,20 +286,56 @@ public class MainWindow : Window, IDisposable
     private float calculateZ(int idx)
     {
         var tempZ = 0f;
-        switch((int)Plugin.Configuration.Shape)
+        var startZ = Plugin.Configuration.WaymarksCenterZ;
+        var rotationOffset = (float)((2*Math.PI*Plugin.Configuration.WaymarksRotationOffset/360f)-Math.PI/2);
+        var rotation = (float)Math.Sin((2*Math.PI*(idx/8f)) + rotationOffset);
+        var radius = Plugin.Configuration.WaymarksRadius;
+        var radiusB = Plugin.Configuration.WaymarksRadiusB;
+        var squareCornerRadius = (float)(radius/Math.Sin(Math.PI/4));
+        switch(Plugin.Configuration.Shape)
         {
-            case 0:
+            case WaymarkShape.Circle:
                 //Circle
-                    var startZ = Plugin.Configuration.WaymarksCenterZ;
-                    var rotationOffset = (float)((2*Math.PI*Plugin.Configuration.WaymarksRotationOffset/360f)-Math.PI/2);
-                    var preRotation = (float)Math.Sin((2*Math.PI*(idx/8f))+rotationOffset);
-                    var radius = Plugin.Configuration.WaymarksRadius;
-                    tempZ = startZ + preRotation*radius;
-                break;
-            case 1:
+                tempZ = startZ + (rotation * radius);
+            break;
+            case WaymarkShape.Square:
                 //Square
+                if (idx%2 == 0)
+                {
+                    tempZ = startZ + (rotation * radius);
+                } else
+                {
+                    tempZ = startZ + (rotation * squareCornerRadius);
+                }
+            break;
+            case WaymarkShape.Diamond:
+                //Diamond
+                if (idx%2 == 0)
+                {
+                    tempZ = startZ + (rotation * squareCornerRadius);
+                } else
+                {
+                    tempZ = startZ + (rotation * radius);
+                }
+            break;
+            case WaymarkShape.Star:
+                //Star
+                if (idx%2 == 0)
+                {
+                    tempZ = startZ + (rotation * radius);
+                } else
+                {
+                    tempZ = startZ + (rotation * radiusB);
+                }
             break;
         }
+        Plugin.Log.Debug($"Data of Waymark {idx}:\r\n" +
+                                $"startZ: {startZ}\r\n" +
+                                $"rotation: {rotation}\r\n" +
+                                $"rotationOffset: {rotationOffset}\r\n" +
+                                $"radius: {radius}\r\n" +
+                                $"squareCornerRadius: {squareCornerRadius}\r\n" +
+                                $"combined: {tempZ}");
         
         return tempZ;
     }
