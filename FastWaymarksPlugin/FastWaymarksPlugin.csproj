@@ -11,7 +11,11 @@
 
   <ItemGroup>
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
     <Content Include="..\Data\goat.png">
+=======
+    <Content Include="..\images\icon.png">
+>>>>>>> Stashed changes
 =======
     <Content Include="..\images\icon.png">
 >>>>>>> Stashed changes
