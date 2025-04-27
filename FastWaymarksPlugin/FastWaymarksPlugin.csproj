@@ -2,8 +2,8 @@
 <Project Sdk="Dalamud.NET.Sdk/12.0.2">
   <PropertyGroup>
     <TargetFramework>net9.0-windows</TargetFramework>
-    <Version>0.0.0.1</Version>
-    <Description>A sample plugin.</Description>
+    <Version>1.1</Version>
+    <Description>Fast Waymarks Plugin</Description>
     <PackageProjectUrl></PackageProjectUrl>
     <PackageLicenseExpression>AGPL-3.0-or-later</PackageLicenseExpression>
     <IsPackable>false</IsPackable>

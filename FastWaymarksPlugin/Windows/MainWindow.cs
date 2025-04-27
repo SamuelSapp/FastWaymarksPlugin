@@ -1,24 +1,15 @@
 ﻿using System;
 using System.Numerics;
-using System.Linq;
-using System.Collections;
-using Dalamud.Interface.Utility;
-using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
-using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Misc;
 using ImGuiNET;
-using Lumina.Excel.Sheets;
 using Dalamud.Interface.Components;
-using Dalamud.Utility;
 
 namespace FastWaymarksPlugin.Windows;
 
 public class MainWindow : Window, IDisposable
 {
-#pragma warning disable IDE1006 // Naming Styles
     private readonly Plugin Plugin;
-#pragma warning restore IDE1006 // Naming Styles
 
     internal ScratchPreset ScratchEditingPreset { get; private set; }
     public WaymarkPreset testWaymarkPreset;
@@ -55,28 +46,13 @@ public class MainWindow : Window, IDisposable
     {
         if (ScratchEditingPreset != null)
         {
-            stepFrame();
-            if (Plugin.Configuration.hasSettingChanged && frameCounter == 1)
+            if (Plugin.Configuration.hasSettingChanged)
             {
-                if (ScratchEditingPreset != null)
-                {
-                    preparePreset(false);
-                }
-                //updateDisplayPreset();
+                preparePreset(false);
+                
                 Plugin.Configuration.hasSettingChanged = false;
                 Plugin.Configuration.Save();
             }
-            //ImGui.TextUnformatted($"The waymark config bool is {Plugin.Configuration.Order.ToString()}");
-
-            /*
-            var orderNames = Enum.GetNames<WaymarkOrder>();
-            var tempOrder = (int) Plugin.Configuration.Order;
-            if (ImGui.Combo("Waymarks Order", ref tempOrder, orderNames, orderNames.Length)) 
-            {
-                Plugin.Configuration.Order = (WaymarkOrder) tempOrder;
-                Plugin.Configuration.Save();
-            }
-            */
 
             var orderNames = Enum.GetNames<WaymarkOrder>();
             var tempOrder = (int) Plugin.Configuration.Order;
@@ -86,16 +62,6 @@ public class MainWindow : Window, IDisposable
                 changeSetting();
                 Plugin.Configuration.Save();
             }
-
-            /*
-            var shapeNames = Enum.GetNames<WaymarkShape>();
-            var tempShape = (int) Plugin.Configuration.Shape;
-            if (ImGui.Combo("Waymarks Shape", ref tempShape, shapeNames, shapeNames.Length)) 
-            {
-                Plugin.Configuration.Shape = (WaymarkShape) tempShape;
-                Plugin.Configuration.Save();
-            }
-            */
 
             var shapeNames = Enum.GetNames<WaymarkShape>();
             var tempShape = (int) Plugin.Configuration.Shape;
@@ -176,7 +142,7 @@ public class MainWindow : Window, IDisposable
             }
 
             var tempWaymarksRotationOffset = Plugin.Configuration.WaymarksRotationOffset;
-            if (ImGui.SliderFloat("Rotation", ref tempWaymarksRotationOffset, 0f, 360f, $"{tempWaymarksRotationOffset,8:##0.0}"))
+            if (ImGui.SliderFloat("Rotation", ref tempWaymarksRotationOffset, 0f, 360f, $"%.1f"))
             {
                 Plugin.Configuration.WaymarksRotationOffset = tempWaymarksRotationOffset;
                 changeSetting();
@@ -211,15 +177,6 @@ public class MainWindow : Window, IDisposable
 
             ImGuiComponents.HelpMarker("Fast Waymarks are only placeable within instanced zones", Dalamud.Interface.FontAwesomeIcon.QuestionCircle);
 
-            /*
-            if (ImGui.Button("Save Waymarks"))
-            {
-                FieldMarkerPreset currentWaymarks = new();
-                if (MemoryHandler.GetCurrentWaymarksAsPresetData(ref currentWaymarks))
-                    ScratchEditingPreset = new ScratchPreset(WaymarkPreset.Parse(currentWaymarks));
-            }
-            */
-
             ImGui.Spacing();
         } else {
             ImGui.TextUnformatted($"The waymarks failed to compile");
@@ -248,17 +205,6 @@ public class MainWindow : Window, IDisposable
         Plugin.Configuration.hasSettingChanged = true;
     }
 
-    private void stepFrame()
-    {
-        if (frameCounter < maxFrameCount)
-        {
-            frameCounter++;
-        } else
-        {
-            frameCounter = 1;
-        }
-    }
-
     private void preparePreset(bool toPlace) 
     {
         float YCoord = 0f;
@@ -278,18 +224,6 @@ public class MainWindow : Window, IDisposable
             var tempCoord = new Vector3(calculateX(i), YCoord, calculateZ(i));
             ScratchEditingPreset.SetWaymark(PO[i],true,tempCoord);
         }
-
-        /*
-        foreach (var waymark in ScratchEditingPreset.Waymarks)
-        {
-            
-            waymark.Active = true;
-
-            waymark.X = calculateX(waymark.ID);
-            waymark.Y = playerPos.Y;
-            waymark.Z = calculateZ(waymark.ID);
-        }
-        */
     }
 
     private float calculateX(int idx)
@@ -303,16 +237,7 @@ public class MainWindow : Window, IDisposable
         var radius = Plugin.Configuration.WaymarksRadius;
         var radiusB = Plugin.Configuration.WaymarksRadiusB;
         var squareCornerRadius = radius*Utils.SquareCornerFactor;
-        /*
-        var startX = Plugin.Configuration.WaymarksCenterX;
 
-        var rotationOffset = (float)((2*Math.PI*Plugin.Configuration.WaymarksRotationOffset/360f)-Math.PI/2);
-        var rotation = (float)Math.Cos((2*Math.PI*(idx/8f)) + rotationOffset);
-
-        var radius = Plugin.Configuration.WaymarksRadius;
-        var radiusB = Plugin.Configuration.WaymarksRadiusB;
-        var squareCornerRadius = (float)(radius/Math.Cos(Math.PI/4));
-        */
         switch(Plugin.Configuration.Shape)
         {
             case WaymarkShape.Circle:
@@ -432,19 +357,16 @@ public class MainWindow : Window, IDisposable
             case WaymarkOrder.Proper:
                 //Proper Order 
                 //(A 1 B 2 C 3 D 4)
-                //(0 1 2 3 4 5 6 7)
                 WO = [0, 4, 1, 5, 2, 6, 3, 7];
                 break;
             case WaymarkOrder.Partyfinder:
                 //Party Finder Order
                 //(A 2 B 3 C 4 D 1)
-                //(0 1 2 3 4 5 6 7)
                 WO = [0, 5, 1, 6, 2, 7, 3, 4];
                 break;
             case WaymarkOrder.LetterNumber:
                 //Letter-Number Order
                 //(A B C D 1 2 3 4)
-                //(0 1 2 3 4 5 6 7)
                 WO = [0, 1, 2, 3, 4, 5, 6, 7];
                 break;
         }

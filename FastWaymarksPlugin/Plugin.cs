@@ -1,20 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Linq;
-using System.IO;
-using Dalamud.Game.Command;
+﻿using Dalamud.Game.Command;
 using Dalamud.Interface.Textures.TextureWraps;
 using Dalamud.Interface.Windowing;
 using Dalamud.IoC;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
-using Dalamud.Utility;
-using FFXIVClientStructs.FFXIV.Client.UI.Misc;
-using ImGuiNET;
-using Newtonsoft.Json;
 using FastWaymarksPlugin.Windows;
-using System.Diagnostics;
 
 namespace FastWaymarksPlugin;
 
@@ -35,7 +25,7 @@ public sealed class Plugin : IDalamudPlugin
     public Configuration Configuration { get; init; }
 
     public readonly WindowSystem WindowSystem = new("FastWaymarksPlugin");
-    private ConfigWindow ConfigWindow { get; init; }
+    //private ConfigWindow ConfigWindow { get; init; }
     public MainWindow MainWindow { get; init; }
     public MapWindow MapWindow { get; init; }
 
@@ -45,11 +35,11 @@ public sealed class Plugin : IDalamudPlugin
     {
         Configuration = PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
 
-        ConfigWindow = new ConfigWindow(this);
+        //ConfigWindow = new ConfigWindow(this);
         MainWindow = new MainWindow(this);
         MapWindow = new MapWindow(this);
 
-        WindowSystem.AddWindow(ConfigWindow);
+        //WindowSystem.AddWindow(ConfigWindow);
         WindowSystem.AddWindow(MainWindow);
         WindowSystem.AddWindow(MapWindow);
 
@@ -67,11 +57,8 @@ public sealed class Plugin : IDalamudPlugin
 
         PluginInterface.UiBuilder.Draw += DrawUI;
 
-        // This adds a button to the plugin installer entry of this plugin which allows
-        // to toggle the display status of the configuration ui
-        PluginInterface.UiBuilder.OpenConfigUi += ToggleConfigUI;
+        //PluginInterface.UiBuilder.OpenConfigUi += ToggleConfigUI;
 
-        // Adds another button that is doing the same but for the main ui of the plugin
         PluginInterface.UiBuilder.OpenMainUi += ToggleMainUI;
 
         //Load waymark icons.
@@ -83,18 +70,13 @@ public sealed class Plugin : IDalamudPlugin
         WaymarkIconTextures[5] ??= Texture.GetFromGameIcon(61245).RentAsync().Result; //2
         WaymarkIconTextures[6] ??= Texture.GetFromGameIcon(61246).RentAsync().Result; //3
         WaymarkIconTextures[7] ??= Texture.GetFromGameIcon(61248).RentAsync().Result; //4
-
-        // Add a simple message to the log with level set to information
-        // Use /xllog to open the log window in-game
-        // Example Output: 00:57:54.959 | INF | [FastWaymarksPlugin] ===A cool log message from Sample Plugin===
-        Log.Information($"===A cool log message from {PluginInterface.Manifest.Name}===");
     }
 
     public void Dispose()
     {
         WindowSystem.RemoveAllWindows();
 
-        ConfigWindow.Dispose();
+        //ConfigWindow.Dispose();
         MainWindow.Dispose();
         MapWindow.Dispose();
 
@@ -125,7 +107,7 @@ public sealed class Plugin : IDalamudPlugin
 
     private void DrawUI() => WindowSystem.Draw();
 
-    public void ToggleConfigUI() => ConfigWindow.Toggle();
+    //public void ToggleConfigUI() => ConfigWindow.Toggle();
     public void ToggleMainUI() => MainWindow.Toggle();
     public void ToggleMapUI() => MapWindow.Toggle();
 
