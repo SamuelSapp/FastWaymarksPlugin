@@ -10,7 +10,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+<<<<<<< Updated upstream
     <Content Include="..\Data\goat.png">
+=======
+    <Content Include="..\images\icon.png">
+>>>>>>> Stashed changes
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Visible>false</Visible>
     </Content>
