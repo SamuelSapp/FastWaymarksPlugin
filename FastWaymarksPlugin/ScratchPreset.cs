@@ -127,32 +127,9 @@ internal sealed class ScratchPreset
         Waymarks.Last().Label = "4";
     }
 
-    public WaymarkPreset GetPreset(int presetOrder)
+    public WaymarkPreset GetPreset()
     {
         int[] PO = {0,1,2,3,4,5,6,7};
-        
-        switch(presetOrder)
-        {
-            case 0:
-                //Proper Order 
-                //(A 1 B 2 C 3 D 4)
-                //(0 1 2 3 4 5 6 7)
-                PO = [0, 2, 4, 6, 1, 3, 5, 7];
-                break;
-            case 1:
-                //Party Finder Order
-                //(A 2 B 3 C 4 D 1)
-                //(0 1 2 3 4 5 6 7)
-                PO = [0, 2, 4, 6, 7, 1, 3, 5];
-                break;
-            case 3:
-                //Letter-Number Order
-                //(A B C D 1 2 3 4)
-                //(0 1 2 3 4 5 6 7)
-                PO = [0, 1, 2, 3, 4, 5, 6, 7];
-                break;
-        }
-        
 
         WaymarkPreset newPreset = new()
         {

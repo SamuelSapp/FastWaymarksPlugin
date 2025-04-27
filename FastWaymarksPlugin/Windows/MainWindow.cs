@@ -10,6 +10,7 @@ using FFXIVClientStructs.FFXIV.Client.UI.Misc;
 using ImGuiNET;
 using Lumina.Excel.Sheets;
 using Dalamud.Interface.Components;
+using Dalamud.Utility;
 
 namespace FastWaymarksPlugin.Windows;
 
@@ -20,15 +21,17 @@ public class MainWindow : Window, IDisposable
 #pragma warning restore IDE1006 // Naming Styles
 
     internal ScratchPreset ScratchEditingPreset { get; private set; }
-
     public WaymarkPreset testWaymarkPreset;
 
+    private int frameCounter = 1;
+    private int maxFrameCount = 2;
+
     public MainWindow(Plugin plugin)
-        : base("Fast Waymarks##FastWaymarksMain", ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse)
+        : base("Fast Waymarks##FastWaymarksMain", ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse | ImGuiWindowFlags.AlwaysAutoResize)
     {
         SizeConstraints = new WindowSizeConstraints
         {
-            MinimumSize = new Vector2(322, 247),
+            MinimumSize = new Vector2(200, 247),
             MaximumSize = new Vector2(float.MaxValue, float.MaxValue)
         };
 
@@ -39,15 +42,30 @@ public class MainWindow : Window, IDisposable
 
     public override void OnOpen() 
     {
+
         FieldMarkerPreset currentWaymarks = new();
         if (MemoryHandler.GetCurrentWaymarksAsPresetData(ref currentWaymarks))
+        {
             ScratchEditingPreset = new ScratchPreset(WaymarkPreset.Parse(currentWaymarks));
+        }
+        preparePreset(false);
     }
 
     public override void Draw()
     {
         if (ScratchEditingPreset != null)
         {
+            stepFrame();
+            if (Plugin.Configuration.hasSettingChanged && frameCounter == 1)
+            {
+                if (ScratchEditingPreset != null)
+                {
+                    preparePreset(false);
+                }
+                //updateDisplayPreset();
+                Plugin.Configuration.hasSettingChanged = false;
+                Plugin.Configuration.Save();
+            }
             //ImGui.TextUnformatted($"The waymark config bool is {Plugin.Configuration.Order.ToString()}");
 
             /*
@@ -65,6 +83,7 @@ public class MainWindow : Window, IDisposable
             if (ImGui.SliderInt("Order", ref tempOrder, 0, orderNames.Length-1, $"{orderNames[tempOrder]}")) 
             {
                 Plugin.Configuration.Order = (WaymarkOrder) tempOrder;
+                changeSetting();
                 Plugin.Configuration.Save();
             }
 
@@ -83,6 +102,7 @@ public class MainWindow : Window, IDisposable
             if (ImGui.SliderInt("Shape", ref tempShape, 0, shapeNames.Length-1, $"{shapeNames[tempShape]}")) 
             {
                 Plugin.Configuration.Shape = (WaymarkShape) tempShape;
+                changeSetting();
                 Plugin.Configuration.Save();
             }
 
@@ -91,6 +111,7 @@ public class MainWindow : Window, IDisposable
             {
                 Plugin.Configuration.WaymarksCenterX = tempWaymarksCenter.X;
                 Plugin.Configuration.WaymarksCenterZ = tempWaymarksCenter.Y;
+                changeSetting();
                 Plugin.Configuration.Save();
             }
 
@@ -101,6 +122,7 @@ public class MainWindow : Window, IDisposable
                 {
                     Plugin.Configuration.WaymarksCenterX = actor.Position.X;
                     Plugin.Configuration.WaymarksCenterZ = actor.Position.Z;
+                    changeSetting();
                     Plugin.Configuration.Save();
                 }
             }
@@ -121,6 +143,7 @@ public class MainWindow : Window, IDisposable
                         Plugin.Configuration.WaymarksCenterX = 100.0f;
                         Plugin.Configuration.WaymarksCenterZ = 100.0f;
                     }
+                    changeSetting();
                     Plugin.Configuration.Save();
                 }
             }
@@ -138,6 +161,7 @@ public class MainWindow : Window, IDisposable
                 {
                     Plugin.Configuration.WaymarksRadius = tempWaymarksRadii.X;
                     Plugin.Configuration.WaymarksRadiusB = tempWaymarksRadii.Y;
+                    changeSetting();
                     Plugin.Configuration.Save();
                 }
             } else 
@@ -146,6 +170,7 @@ public class MainWindow : Window, IDisposable
                 if (ImGui.DragFloat("Radius", ref tempWaymarksRadius, 0.01f, 0, 50))
                 {
                     Plugin.Configuration.WaymarksRadius = tempWaymarksRadius;
+                    changeSetting();
                     Plugin.Configuration.Save();
                 }
             }
@@ -154,6 +179,7 @@ public class MainWindow : Window, IDisposable
             if (ImGui.SliderFloat("Rotation", ref tempWaymarksRotationOffset, 0f, 360f, $"{tempWaymarksRotationOffset,8:##0.0}"))
             {
                 Plugin.Configuration.WaymarksRotationOffset = tempWaymarksRotationOffset;
+                changeSetting();
                 Plugin.Configuration.Save();
             }
 
@@ -165,10 +191,18 @@ public class MainWindow : Window, IDisposable
             */
             if (!MemoryHandler.IsSafeToDirectPlacePreset()) ImGui.BeginDisabled();
             
+            if (ImGui.Button("Map Preview"))
+            {
+                preparePreset(false);
+                Plugin.ToggleMapUI();
+            }
+
+            ImGui.SameLine();
+
             if (ImGui.Button("Place Waymarks"))
             {
-                preparePreset();
-                testWaymarkPreset = ScratchEditingPreset.GetPreset((int)Plugin.Configuration.Order);
+                preparePreset(true);
+                testWaymarkPreset = ScratchEditingPreset.GetPreset();
                 MemoryHandler.PlacePreset(testWaymarkPreset.GetAsGamePreset());
             }
             ImGui.EndDisabled();
@@ -193,26 +227,58 @@ public class MainWindow : Window, IDisposable
             {
                 FieldMarkerPreset currentWaymarks = new();
                 if (MemoryHandler.GetCurrentWaymarksAsPresetData(ref currentWaymarks))
+                {
                     ScratchEditingPreset = new ScratchPreset(WaymarkPreset.Parse(currentWaymarks));
+                }
+                preparePreset(false);
             }
         }
     }
 
-    private void preparePreset() 
+    public void UpdateMapID()
     {
-        Vector3 playerPos;
-        if (Plugin.ClientState.LocalPlayer != null)
+        if (ScratchEditingPreset != null)
         {
-            playerPos = Plugin.ClientState.LocalPlayer.Position;
+            ScratchEditingPreset.MapID = ZoneInfoHandler.GetContentFinderIDFromTerritoryTypeID(Plugin.ClientState.TerritoryType);
+        }
+    }
+
+    private void changeSetting()
+    {
+        Plugin.Configuration.hasSettingChanged = true;
+    }
+
+    private void stepFrame()
+    {
+        if (frameCounter < maxFrameCount)
+        {
+            frameCounter++;
         } else
         {
-            playerPos = new Vector3(0f,0f,0f);
+            frameCounter = 1;
         }
-        for (int i = 0; i < 8; i++)
+    }
+
+    private void preparePreset(bool toPlace) 
+    {
+        float YCoord = 0f;
+        if (toPlace)
         {
-            var tempCoord = new Vector3(calculateX(i), playerPos.Y, calculateZ(i));
-            ScratchEditingPreset.SetWaymark(i,true,tempCoord);
+            var actor = Plugin.ClientState.LocalPlayer;
+            if (actor != null)
+            {
+                YCoord = actor.Position.Y;
+            } 
+        } 
+
+        int[] PO = getWaymarkOrder(Plugin.Configuration.Order);
+
+        for (int i = 0; i < PO.Length; i++)
+        {
+            var tempCoord = new Vector3(calculateX(i), YCoord, calculateZ(i));
+            ScratchEditingPreset.SetWaymark(PO[i],true,tempCoord);
         }
+
         /*
         foreach (var waymark in ScratchEditingPreset.Waymarks)
         {
@@ -230,11 +296,23 @@ public class MainWindow : Window, IDisposable
     {
         var tempX = 0f;
         var startX = Plugin.Configuration.WaymarksCenterX;
+
+        var rotationOperands = Utils.PIOverFour*(idx+(Plugin.Configuration.WaymarksRotationOffset/45f)-2);
+        var rotation = (float)Math.Cos(rotationOperands);
+
+        var radius = Plugin.Configuration.WaymarksRadius;
+        var radiusB = Plugin.Configuration.WaymarksRadiusB;
+        var squareCornerRadius = radius*Utils.SquareCornerFactor;
+        /*
+        var startX = Plugin.Configuration.WaymarksCenterX;
+
         var rotationOffset = (float)((2*Math.PI*Plugin.Configuration.WaymarksRotationOffset/360f)-Math.PI/2);
         var rotation = (float)Math.Cos((2*Math.PI*(idx/8f)) + rotationOffset);
+
         var radius = Plugin.Configuration.WaymarksRadius;
         var radiusB = Plugin.Configuration.WaymarksRadiusB;
         var squareCornerRadius = (float)(radius/Math.Cos(Math.PI/4));
+        */
         switch(Plugin.Configuration.Shape)
         {
             case WaymarkShape.Circle:
@@ -273,12 +351,14 @@ public class MainWindow : Window, IDisposable
                 }
             break;
         }
+        /*
         Plugin.Log.Debug($"Data of Waymark {idx}:\r\n" +
                                 $"startX: {startX}\r\n" +
                                 $"rotation: {rotation}\r\n" +
                                 $"rotationOffset: {rotationOffset}\r\n" +
                                 $"radius: {radius}\r\n" +
                                 $"combined: {tempX}");
+        */
         
         return tempX;
     }
@@ -286,12 +366,14 @@ public class MainWindow : Window, IDisposable
     private float calculateZ(int idx)
     {
         var tempZ = 0f;
-        var startZ = Plugin.Configuration.WaymarksCenterZ;
-        var rotationOffset = (float)((2*Math.PI*Plugin.Configuration.WaymarksRotationOffset/360f)-Math.PI/2);
-        var rotation = (float)Math.Sin((2*Math.PI*(idx/8f)) + rotationOffset);
+        var startZ = Plugin.Configuration.WaymarksCenterX;
+
+        var rotationOperands = Utils.PIOverFour*(idx+(Plugin.Configuration.WaymarksRotationOffset/45f)-2);
+        var rotation = (float)Math.Sin(rotationOperands);
+
         var radius = Plugin.Configuration.WaymarksRadius;
         var radiusB = Plugin.Configuration.WaymarksRadiusB;
-        var squareCornerRadius = (float)(radius/Math.Sin(Math.PI/4));
+        var squareCornerRadius = radius*Utils.SquareCornerFactor;
         switch(Plugin.Configuration.Shape)
         {
             case WaymarkShape.Circle:
@@ -329,6 +411,7 @@ public class MainWindow : Window, IDisposable
                 }
             break;
         }
+        /*
         Plugin.Log.Debug($"Data of Waymark {idx}:\r\n" +
                                 $"startZ: {startZ}\r\n" +
                                 $"rotation: {rotation}\r\n" +
@@ -336,7 +419,36 @@ public class MainWindow : Window, IDisposable
                                 $"radius: {radius}\r\n" +
                                 $"squareCornerRadius: {squareCornerRadius}\r\n" +
                                 $"combined: {tempZ}");
-        
+        */
         return tempZ;
+    }
+
+    private int[] getWaymarkOrder(WaymarkOrder order)
+    {
+        int[] WO = {0,1,2,3,4,5,6,7};
+        
+        switch(order)
+        {
+            case WaymarkOrder.Proper:
+                //Proper Order 
+                //(A 1 B 2 C 3 D 4)
+                //(0 1 2 3 4 5 6 7)
+                WO = [0, 4, 1, 5, 2, 6, 3, 7];
+                break;
+            case WaymarkOrder.Partyfinder:
+                //Party Finder Order
+                //(A 2 B 3 C 4 D 1)
+                //(0 1 2 3 4 5 6 7)
+                WO = [0, 5, 1, 6, 2, 7, 3, 4];
+                break;
+            case WaymarkOrder.LetterNumber:
+                //Letter-Number Order
+                //(A B C D 1 2 3 4)
+                //(0 1 2 3 4 5 6 7)
+                WO = [0, 1, 2, 3, 4, 5, 6, 7];
+                break;
+        }
+
+        return WO;
     }
 }

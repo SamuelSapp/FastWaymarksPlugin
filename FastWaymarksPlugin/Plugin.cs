@@ -14,6 +14,7 @@ using FFXIVClientStructs.FFXIV.Client.UI.Misc;
 using ImGuiNET;
 using Newtonsoft.Json;
 using FastWaymarksPlugin.Windows;
+using System.Diagnostics;
 
 namespace FastWaymarksPlugin;
 
@@ -35,7 +36,10 @@ public sealed class Plugin : IDalamudPlugin
 
     public readonly WindowSystem WindowSystem = new("FastWaymarksPlugin");
     private ConfigWindow ConfigWindow { get; init; }
-    private MainWindow MainWindow { get; init; }
+    public MainWindow MainWindow { get; init; }
+    public MapWindow MapWindow { get; init; }
+
+    internal readonly IDalamudTextureWrap[] WaymarkIconTextures = new IDalamudTextureWrap[8];
 
     public Plugin()
     {
@@ -43,9 +47,11 @@ public sealed class Plugin : IDalamudPlugin
 
         ConfigWindow = new ConfigWindow(this);
         MainWindow = new MainWindow(this);
+        MapWindow = new MapWindow(this);
 
         WindowSystem.AddWindow(ConfigWindow);
         WindowSystem.AddWindow(MainWindow);
+        WindowSystem.AddWindow(MapWindow);
 
         ZoneInfoHandler.Init();
 
@@ -56,7 +62,8 @@ public sealed class Plugin : IDalamudPlugin
                 HelpMessage = "Toggles main plugin window."
             });
         }
-        
+
+        ClientState.TerritoryChanged += TerritoryChanged;
 
         PluginInterface.UiBuilder.Draw += DrawUI;
 
@@ -66,6 +73,16 @@ public sealed class Plugin : IDalamudPlugin
 
         // Adds another button that is doing the same but for the main ui of the plugin
         PluginInterface.UiBuilder.OpenMainUi += ToggleMainUI;
+
+        //Load waymark icons.
+        WaymarkIconTextures[0] ??= Texture.GetFromGameIcon(61241).RentAsync().Result; //A
+        WaymarkIconTextures[1] ??= Texture.GetFromGameIcon(61242).RentAsync().Result; //B
+        WaymarkIconTextures[2] ??= Texture.GetFromGameIcon(61243).RentAsync().Result; //C
+        WaymarkIconTextures[3] ??= Texture.GetFromGameIcon(61247).RentAsync().Result; //D
+        WaymarkIconTextures[4] ??= Texture.GetFromGameIcon(61244).RentAsync().Result; //1
+        WaymarkIconTextures[5] ??= Texture.GetFromGameIcon(61245).RentAsync().Result; //2
+        WaymarkIconTextures[6] ??= Texture.GetFromGameIcon(61246).RentAsync().Result; //3
+        WaymarkIconTextures[7] ??= Texture.GetFromGameIcon(61248).RentAsync().Result; //4
 
         // Add a simple message to the log with level set to information
         // Use /xllog to open the log window in-game
@@ -79,12 +96,19 @@ public sealed class Plugin : IDalamudPlugin
 
         ConfigWindow.Dispose();
         MainWindow.Dispose();
+        MapWindow.Dispose();
+
+        ClientState.TerritoryChanged -= TerritoryChanged;
 
         foreach (var command in CommandList)
         {
             Commands.RemoveHandler(command);
         }
-        
+
+        foreach (var t in WaymarkIconTextures)
+        {
+            t?.Dispose();
+        }
     }
 
     private void OnCommand(string command, string args)
@@ -93,10 +117,16 @@ public sealed class Plugin : IDalamudPlugin
         ToggleMainUI();
     }
 
+    private void TerritoryChanged(ushort territoryType)
+    {
+        Plugin.Log.Debug($"Territory Changed to: {territoryType}");
+        MainWindow.UpdateMapID();
+    }
+
     private void DrawUI() => WindowSystem.Draw();
 
     public void ToggleConfigUI() => ConfigWindow.Toggle();
     public void ToggleMainUI() => MainWindow.Toggle();
+    public void ToggleMapUI() => MapWindow.Toggle();
 
-    
 }
