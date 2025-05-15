@@ -27,9 +27,12 @@ public class Configuration : IPluginConfiguration
 
     public bool CenterOnPlayer {get; set;} = false;
     public bool hasSettingChanged {get; set;} = false;
+    public bool autoCenterOnLoad { get; set; } = true;
+    public bool displayWaymarkY { get; set; } = false;
     public WaymarkOrder Order {get; set;} = WaymarkOrder.Proper;
     public WaymarkShape Shape {get; set;} = WaymarkShape.Circle;
     public float WaymarksCenterX {get; set;} = 0f;
+    public float WaymarksCenterY {get; set;} = 0f;
     public float WaymarksCenterZ {get; set;} = 0f;
     public float WaymarksRadius {get; set;} = 10f;
     public float WaymarksRadiusB {get; set;} = 10f;

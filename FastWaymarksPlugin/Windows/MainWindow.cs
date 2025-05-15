@@ -4,6 +4,7 @@ using Dalamud.Interface.Windowing;
 using FFXIVClientStructs.FFXIV.Client.UI.Misc;
 using ImGuiNET;
 using Dalamud.Interface.Components;
+using FFXIVClientStructs.FFXIV.Client.Game.UI;
 
 namespace FastWaymarksPlugin.Windows;
 
@@ -13,9 +14,7 @@ public class MainWindow : Window, IDisposable
 
     internal ScratchPreset ScratchEditingPreset { get; private set; }
     public WaymarkPreset testWaymarkPreset;
-
-    private int frameCounter = 1;
-    private int maxFrameCount = 2;
+    internal bool zoneChanged = false;
 
     public MainWindow(Plugin plugin)
         : base("Fast Waymarks##FastWaymarksMain", ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse | ImGuiWindowFlags.AlwaysAutoResize)
@@ -40,6 +39,43 @@ public class MainWindow : Window, IDisposable
             ScratchEditingPreset = new ScratchPreset(WaymarkPreset.Parse(currentWaymarks));
         }
         preparePreset(false);
+    }
+
+    public override void Update()
+    {
+        if (Plugin.Configuration.autoCenterOnLoad)
+        {
+            if (zoneChanged)
+            {
+                var actor = Plugin.ClientState.LocalPlayer;
+                if (actor != null)
+                {
+                    if (actor.Position.X < 50.0f && actor.Position.Z < 50.0f)
+                    {
+                        Plugin.Configuration.WaymarksCenterX = 0.0f;
+                        Plugin.Configuration.WaymarksCenterZ = 0.0f;
+                    } else 
+                    {
+                        Plugin.Configuration.WaymarksCenterX = 100.0f;
+                        Plugin.Configuration.WaymarksCenterZ = 100.0f;
+                    }
+                    Plugin.Configuration.WaymarksCenterY = actor.Position.Y;
+                    changeSetting();
+                    Plugin.Configuration.Save();
+                    zoneChanged = false;
+
+                    if (Plugin.MapWindow.IsOpen){
+                        Plugin.ToggleMapUI();
+                    }
+                }
+            }
+        } else 
+        {
+            if (zoneChanged)
+            {
+                zoneChanged = false;
+            }
+        }
     }
 
     public override void Draw()
@@ -72,13 +108,28 @@ public class MainWindow : Window, IDisposable
                 Plugin.Configuration.Save();
             }
 
-            var tempWaymarksCenter = new Vector2(Plugin.Configuration.WaymarksCenterX,Plugin.Configuration.WaymarksCenterZ);
-            if (ImGui.DragFloat2("Center", ref tempWaymarksCenter, 0.01f, -1000, 1000))
+            var tempDisplayWaymarkY = Plugin.Configuration.displayWaymarkY;
+            if (tempDisplayWaymarkY) 
             {
-                Plugin.Configuration.WaymarksCenterX = tempWaymarksCenter.X;
-                Plugin.Configuration.WaymarksCenterZ = tempWaymarksCenter.Y;
-                changeSetting();
-                Plugin.Configuration.Save();
+                var tempWaymarksCenter = new Vector3(Plugin.Configuration.WaymarksCenterX,Plugin.Configuration.WaymarksCenterZ, Plugin.Configuration.WaymarksCenterY);
+                if (ImGui.DragFloat3("Center", ref tempWaymarksCenter, 0.01f, -1000, 1000))
+                {
+                    Plugin.Configuration.WaymarksCenterX = tempWaymarksCenter.X;
+                    Plugin.Configuration.WaymarksCenterZ = tempWaymarksCenter.Y;
+                    Plugin.Configuration.WaymarksCenterY = tempWaymarksCenter.Z;
+                    changeSetting();
+                    Plugin.Configuration.Save();
+                }
+            } else
+            {
+                var tempWaymarksCenter = new Vector2(Plugin.Configuration.WaymarksCenterX,Plugin.Configuration.WaymarksCenterZ);
+                if (ImGui.DragFloat2("Center", ref tempWaymarksCenter, 0.01f, -1000, 1000))
+                {
+                    Plugin.Configuration.WaymarksCenterX = tempWaymarksCenter.X;
+                    Plugin.Configuration.WaymarksCenterZ = tempWaymarksCenter.Y;
+                    changeSetting();
+                    Plugin.Configuration.Save();
+                }
             }
 
             if (ImGui.Button("Center on Player"))
@@ -88,6 +139,7 @@ public class MainWindow : Window, IDisposable
                 {
                     Plugin.Configuration.WaymarksCenterX = actor.Position.X;
                     Plugin.Configuration.WaymarksCenterZ = actor.Position.Z;
+                    Plugin.Configuration.WaymarksCenterY = actor.Position.Y;
                     changeSetting();
                     Plugin.Configuration.Save();
                 }
@@ -100,7 +152,7 @@ public class MainWindow : Window, IDisposable
                 var actor = Plugin.ClientState.LocalPlayer;
                 if (actor != null) 
                 {
-                    if (actor.Position.X < 50.0f && actor.Position.Y < 50.0f)
+                    if (actor.Position.X < 50.0f && actor.Position.Z < 50.0f)
                     {
                         Plugin.Configuration.WaymarksCenterX = 0.0f;
                         Plugin.Configuration.WaymarksCenterZ = 0.0f;
@@ -109,6 +161,7 @@ public class MainWindow : Window, IDisposable
                         Plugin.Configuration.WaymarksCenterX = 100.0f;
                         Plugin.Configuration.WaymarksCenterZ = 100.0f;
                     }
+                    Plugin.Configuration.WaymarksCenterY = actor.Position.Y;
                     changeSetting();
                     Plugin.Configuration.Save();
                 }
@@ -155,7 +208,8 @@ public class MainWindow : Window, IDisposable
                 Plugin.ToggleConfigUI();
             }
             */
-            if (!MemoryHandler.IsSafeToDirectPlacePreset()) ImGui.BeginDisabled();
+            var isSafeToDirectPlacePreset = MemoryHandler.IsSafeToDirectPlacePreset();
+            if (!isSafeToDirectPlacePreset) ImGui.BeginDisabled();
             
             if (ImGui.Button("Map Preview"))
             {
@@ -171,11 +225,18 @@ public class MainWindow : Window, IDisposable
                 testWaymarkPreset = ScratchEditingPreset.GetPreset();
                 MemoryHandler.PlacePreset(testWaymarkPreset.GetAsGamePreset());
             }
-            ImGui.EndDisabled();
+            if (!isSafeToDirectPlacePreset) ImGui.EndDisabled();
 
             ImGui.SameLine();
 
             ImGuiComponents.HelpMarker("Fast Waymarks are only placeable within instanced zones", Dalamud.Interface.FontAwesomeIcon.QuestionCircle);
+
+            ImGui.SameLine();
+
+            if (ImGuiComponents.IconButton(Dalamud.Interface.FontAwesomeIcon.Wrench))
+            {
+                Plugin.ToggleConfigUI();
+            }
 
             ImGui.Spacing();
         } else {
@@ -198,6 +259,7 @@ public class MainWindow : Window, IDisposable
         {
             ScratchEditingPreset.MapID = ZoneInfoHandler.GetContentFinderIDFromTerritoryTypeID(Plugin.ClientState.TerritoryType);
         }
+        zoneChanged = true;
     }
 
     private void changeSetting()
@@ -210,11 +272,14 @@ public class MainWindow : Window, IDisposable
         float YCoord = 0f;
         if (toPlace)
         {
+            YCoord = Plugin.Configuration.WaymarksCenterY;
+            /*
             var actor = Plugin.ClientState.LocalPlayer;
             if (actor != null)
             {
                 YCoord = actor.Position.Y;
             } 
+            */
         } 
 
         int[] PO = getWaymarkOrder(Plugin.Configuration.Order);
@@ -291,7 +356,7 @@ public class MainWindow : Window, IDisposable
     private float calculateZ(int idx)
     {
         var tempZ = 0f;
-        var startZ = Plugin.Configuration.WaymarksCenterX;
+        var startZ = Plugin.Configuration.WaymarksCenterZ;
 
         var rotationOperands = Utils.PIOverFour*(idx+(Plugin.Configuration.WaymarksRotationOffset/45f)-2);
         var rotation = (float)Math.Sin(rotationOperands);

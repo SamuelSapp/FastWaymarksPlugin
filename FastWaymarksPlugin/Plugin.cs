@@ -25,7 +25,7 @@ public sealed class Plugin : IDalamudPlugin
     public Configuration Configuration { get; init; }
 
     public readonly WindowSystem WindowSystem = new("FastWaymarksPlugin");
-    //private ConfigWindow ConfigWindow { get; init; }
+    private ConfigWindow ConfigWindow { get; init; }
     public MainWindow MainWindow { get; init; }
     public MapWindow MapWindow { get; init; }
 
@@ -35,11 +35,11 @@ public sealed class Plugin : IDalamudPlugin
     {
         Configuration = PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
 
-        //ConfigWindow = new ConfigWindow(this);
+        ConfigWindow = new ConfigWindow(this);
         MainWindow = new MainWindow(this);
         MapWindow = new MapWindow(this);
 
-        //WindowSystem.AddWindow(ConfigWindow);
+        WindowSystem.AddWindow(ConfigWindow);
         WindowSystem.AddWindow(MainWindow);
         WindowSystem.AddWindow(MapWindow);
 
@@ -57,7 +57,7 @@ public sealed class Plugin : IDalamudPlugin
 
         PluginInterface.UiBuilder.Draw += DrawUI;
 
-        //PluginInterface.UiBuilder.OpenConfigUi += ToggleConfigUI;
+        PluginInterface.UiBuilder.OpenConfigUi += ToggleConfigUI;
 
         PluginInterface.UiBuilder.OpenMainUi += ToggleMainUI;
 
@@ -76,7 +76,7 @@ public sealed class Plugin : IDalamudPlugin
     {
         WindowSystem.RemoveAllWindows();
 
-        //ConfigWindow.Dispose();
+        ConfigWindow.Dispose();
         MainWindow.Dispose();
         MapWindow.Dispose();
 
@@ -107,7 +107,7 @@ public sealed class Plugin : IDalamudPlugin
 
     private void DrawUI() => WindowSystem.Draw();
 
-    //public void ToggleConfigUI() => ConfigWindow.Toggle();
+    public void ToggleConfigUI() => ConfigWindow.Toggle();
     public void ToggleMainUI() => MainWindow.Toggle();
     public void ToggleMapUI() => MapWindow.Toggle();
 

@@ -7,9 +7,7 @@ namespace FastWaymarksPlugin.Windows;
 
 public class ConfigWindow : Window, IDisposable
 {
-#pragma warning disable IDE1006 // Naming Styles
     private readonly Configuration Configuration;
-#pragma warning restore IDE1006 // Naming Styles
 
     // We give this window a constant ID using ###
     // This allows for labels being dynamic, like "{FPS Counter}fps###XYZ counter window",
@@ -34,6 +32,18 @@ public class ConfigWindow : Window, IDisposable
 
     public override void Draw()
     {
-        // can't ref a property, so use a local copy
+        var tempAutoCenterOnLoad = Configuration.autoCenterOnLoad;
+        if (ImGui.Checkbox("Auto-center when changing zone", ref tempAutoCenterOnLoad))
+        {
+            Configuration.autoCenterOnLoad = tempAutoCenterOnLoad;
+            Configuration.Save();
+        }
+
+        var tempDisplayWaymarkY = Configuration.displayWaymarkY;
+        if (ImGui.Checkbox("Edit Waymark Y Placement", ref tempDisplayWaymarkY))
+        {
+            Configuration.displayWaymarkY = tempDisplayWaymarkY;
+            Configuration.Save();
+        }
     }
 }
