@@ -4,6 +4,7 @@
   "Punchline": "For when you want to spend time fighting the boss, not fiddling with waymarks.",
   "Description": "Fast waymarks with settings for common configurations. Rotate and resize with a handy preview window.",
   "ApplicableVersion": "any",
+  "RepoUrl": "https://github.com/SamuelSapp/FastWaymarksPlugin",
   "Tags": [
     "waymarks"
   ]
