@@ -8,6 +8,11 @@ using FastWaymarksPlugin.Windows;
 
 namespace FastWaymarksPlugin;
 
+/*
+Portions of code within this plugin were taken from WaymarkPresetPlugin by Infiziert90.
+https://github.com/Infiziert90/WaymarkPresetPlugin
+*/
+
 public sealed class Plugin : IDalamudPlugin
 {
     [PluginService] public static IDalamudPluginInterface PluginInterface { get; private set; } = null!;
