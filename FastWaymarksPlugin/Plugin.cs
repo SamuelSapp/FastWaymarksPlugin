@@ -87,6 +87,12 @@ public sealed class Plugin : IDalamudPlugin
 
         ClientState.TerritoryChanged -= TerritoryChanged;
 
+        PluginInterface.UiBuilder.Draw -= DrawUI;
+
+        PluginInterface.UiBuilder.OpenConfigUi -= ToggleConfigUI;
+        
+        PluginInterface.UiBuilder.OpenMainUi -= ToggleMainUI;
+
         foreach (var command in CommandList)
         {
             Commands.RemoveHandler(command);
