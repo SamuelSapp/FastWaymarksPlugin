@@ -25,6 +25,7 @@ public static class MemoryHandler
 										$"Content Link Type is: {currentContentLinkType}\r\n" +
 										$"Is Safe to Direct Place: {Plugin.ClientState.LocalPlayer != null && !Plugin.Condition[ConditionFlag.InCombat] && currentContentLinkType is > 0 and < 3}");
 		*/
+		//Plugin.Log.Debug($"Content Type: {currentContentLinkType}");
 		return Plugin.ClientState.LocalPlayer != null && !Plugin.Condition[ConditionFlag.InCombat] && currentContentLinkType is > 0 and < 3;
 	}
 

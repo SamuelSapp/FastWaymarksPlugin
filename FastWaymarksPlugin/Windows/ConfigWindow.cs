@@ -39,11 +39,13 @@ public class ConfigWindow : Window, IDisposable
             Configuration.Save();
         }
 
+        /*
         var tempDisplayWaymarkY = Configuration.displayWaymarkY;
         if (ImGui.Checkbox("Edit Waymark Y Placement", ref tempDisplayWaymarkY))
         {
             Configuration.displayWaymarkY = tempDisplayWaymarkY;
             Configuration.Save();
         }
+        */
     }
 }
