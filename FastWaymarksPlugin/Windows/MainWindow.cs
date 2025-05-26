@@ -4,7 +4,6 @@ using Dalamud.Interface.Windowing;
 using FFXIVClientStructs.FFXIV.Client.UI.Misc;
 using ImGuiNET;
 using Dalamud.Interface.Components;
-using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using FFXIVClientStructs.FFXIV.Common.Component.BGCollision;
 
 namespace FastWaymarksPlugin.Windows;
@@ -231,6 +230,7 @@ public class MainWindow : Window, IDisposable
                 preparePreset(true);
                 testWaymarkPreset = ScratchEditingPreset.GetPreset();
                 MemoryHandler.PlacePreset(testWaymarkPreset.GetAsGamePreset());
+                preparePreset(false);
             }
             if (!isSafeToDirectPlacePreset) ImGui.EndDisabled();
 
@@ -278,34 +278,24 @@ public class MainWindow : Window, IDisposable
 
     private void preparePreset(bool toPlace)
     {
-        float YCoord = 0f;
-        if (toPlace)
-        {
-            if (!Plugin.Configuration.displayWaymarkY)
-            {
-                var actor = Plugin.ClientState.LocalPlayer;
-                YCoord = actor.Position.Y;
-            }
-            else
-            {
-                YCoord = Plugin.Configuration.WaymarksCenterY;
-            }
-
-            /*
-            var actor = Plugin.ClientState.LocalPlayer;
-            if (actor != null)
-            {
-                YCoord = actor.Position.Y;
-            } 
-            */
-        }
-
         int[] PO = getWaymarkOrder(Plugin.Configuration.Order);
 
         for (int i = 0; i < PO.Length; i++)
         {
-            var tempCoord = new Vector3(calculateX(i), YCoord, calculateZ(i));
-            ScratchEditingPreset.SetWaymark(PO[i], true, tempCoord);
+            var tempX = calculateX(i);
+            var tempZ = calculateZ(i);
+            float tempY;
+            bool isActive;
+            if (calculateY(i, toPlace, tempX, tempZ, out tempY))
+            {
+                isActive = true;
+            }
+            else
+            {
+                isActive = false;
+            }
+            var tempCoord = new Vector3(tempX, tempY, tempZ);
+            ScratchEditingPreset.SetWaymark(PO[i], isActive, tempCoord);
         }
     }
 
@@ -372,6 +362,47 @@ public class MainWindow : Window, IDisposable
         */
 
         return tempX;
+    }
+
+    private bool calculateY(int idx, bool toPlace, float tempX, float tempZ, out float tempY)
+    {
+        tempY = 0f;
+        if (toPlace)
+        {
+            if (!Plugin.Configuration.displayWaymarkY)
+            {
+                var actor = Plugin.ClientState.LocalPlayer;
+                if (actor != null)
+                {
+                    tempY = actor.Position.Y;
+                    var tempOrigin = new Vector3(tempX, tempY + 20f, tempZ);
+                    RaycastHit hitInfo;
+                    if (Raycast(tempOrigin, -Vector3.UnitY, out hitInfo))
+                    {
+                        Plugin.Log.Debug($"Waymark {idx} hitInfo: [{hitInfo.Point.X}, {hitInfo.Point.Y}, {hitInfo.Point.Z}] [{hitInfo.Distance}]");
+                        tempY = hitInfo.Point.Y;
+                        if (hitInfo.Distance <= 100f)
+                        {
+                            return true;
+                        }
+                        else
+                        {
+                            return false;
+                        }
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                }
+            }
+            else
+            {
+                tempY = Plugin.Configuration.WaymarksCenterY;
+                return true;
+            }
+        }
+        return true;
     }
 
     private float calculateZ(int idx)
@@ -462,13 +493,12 @@ public class MainWindow : Window, IDisposable
 
         return WO;
     }
-    
-    /*
-    public unsafe static bool Raycast(Vector3 origin, Vector3 direction, RaycastHit* hitInfo, float maxDistance = 1000000f)
+
+    public bool Raycast(Vector3 origin, Vector3 direction, out RaycastHit hitInfo, float maxDistance = 1000000f)
     {
-        var flags = stackalloc int[] { 0x4000, 0, 0x4000, 0 };
-        var result = Framework.Instance()->BGCollisionModule->RaycastMaterialFilter(hitInfo, &origin, &direction, maxDistance, 1, flags);
+        var result = BGCollisionModule.RaycastMaterialFilter(origin, direction, out hitInfo, maxDistance);
         return result;
     }
-    */
+    
+     
 }
