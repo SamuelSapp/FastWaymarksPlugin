@@ -4,7 +4,7 @@
   
   <PropertyGroup>
     <TargetFramework>net9.0-windows</TargetFramework>
-    <Version>1.3</Version>
+    <Version>1.3.1</Version>
     <Description>Fast Waymarks Plugin</Description>
     <PackageProjectUrl></PackageProjectUrl>
     <PackageLicenseExpression>AGPL-3.0-or-later</PackageLicenseExpression>

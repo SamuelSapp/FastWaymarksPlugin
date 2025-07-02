@@ -17,15 +17,23 @@ public static class MemoryHandler
 
 	public static bool IsSafeToDirectPlacePreset()
 	{
+		/*
+		//Content Link Types:
+		//0 - "None" - Overworld
+		//1 - "Instance" - Dungeon/Trial/Raid
+		//2 - "Party" - ???
+		//3 - "Public" - Field Operation/Diadem
+		//4 - "GoldSaucer"
+		*/
 		var currentContentLinkType = (byte) EventFramework.GetCurrentContentType();
 		/*
 		Plugin.Log.Debug($"Player is not null: {Plugin.ClientState.LocalPlayer != null}\r\n" +
-										$"Player is not in combat: {!Plugin.Condition[ConditionFlag.InCombat]}\r\n" +
-										$"Content Link Type is 1-3: {currentContentLinkType is > 0 and < 3}\r\n" +
-										$"Content Link Type is: {currentContentLinkType}\r\n" +
-										$"Is Safe to Direct Place: {Plugin.ClientState.LocalPlayer != null && !Plugin.Condition[ConditionFlag.InCombat] && currentContentLinkType is > 0 and < 3}");
+		                 $"Player is not in combat: {!Plugin.Condition[ConditionFlag.InCombat]}\r\n" +
+		                 $"Content Link Type is 1-2: {currentContentLinkType is >= 1 and <= 2}\r\n" +
+		                 $"Content Link Type is: {currentContentLinkType}\r\n" +
+		                 $"Is Safe to Direct Place: {Plugin.ClientState.LocalPlayer != null && !Plugin.Condition[ConditionFlag.InCombat] && currentContentLinkType is >= 1 and <= 2}");
 		*/
-		return Plugin.ClientState.LocalPlayer != null && !Plugin.Condition[ConditionFlag.InCombat] && currentContentLinkType is > 0 and < 3;
+		return Plugin.ClientState.LocalPlayer != null && !Plugin.Condition[ConditionFlag.InCombat] && currentContentLinkType is >= 1 and <= 2;
 	}
 
 	public static void PlacePreset(FieldMarkerPreset preset)
@@ -49,19 +57,18 @@ public static class MemoryHandler
 					placementStruct.Z[idx] = preset.Markers[idx].Z;
 			}
 			Plugin.Log.Debug($"Data of FieldMarkerPreset:\r\n" +
-											$"Territory: {Plugin.ClientState.TerritoryType}\r\n" +
-											$"ContentFinderCondition: {preset.ContentFinderConditionId}\r\n" +
-											$"Waymark Struct:\r\n{preset.AsString()}");
+			                 $"Territory: {Plugin.ClientState.TerritoryType}\r\n" +
+			                 $"Waymark Struct:\r\n{preset.AsString()}");
 			
 			Plugin.Log.Debug($"Data of MarkerPresetPlacement:\r\n" +
-											$"Waymark Struct:\r\n{placementStruct.AsString()}");
+			                 $"Waymark Struct:\r\n{placementStruct.AsString()}");
 			MarkingController.Instance()->PlacePreset(&placementStruct);
 	}
 
 	public static unsafe bool GetCurrentWaymarksAsPresetData(ref FieldMarkerPreset rPresetData)
 	{
 		var currentContentLinkType = (byte) EventFramework.GetCurrentContentType();
-		if(currentContentLinkType is >= 0 and < 4)	//	Same as the game check, but let it do overworld maps too.
+		if(currentContentLinkType is >= 0 and <= 3)	//	Same as the game check, but let it do overworld maps too.
 		{
 			var bitArray = new BitField8();
 			var markerSpan = MarkingController.Instance()->FieldMarkers;
@@ -78,9 +85,9 @@ public static class MemoryHandler
 			rPresetData.Timestamp = (int)DateTimeOffset.UtcNow.ToUnixTimeSeconds();
 
 			Plugin.Log.Debug($"Obtained current waymarks with the following data:\r\n" +
-											$"Territory: {Plugin.ClientState.TerritoryType}\r\n" +
-											$"ContentFinderCondition: {rPresetData.ContentFinderConditionId}\r\n" +
-											$"Waymark Struct:\r\n{rPresetData.AsString()}");
+			                 $"Territory: {Plugin.ClientState.TerritoryType}\r\n" +
+			                 $"ContentLinkType: {currentContentLinkType}\r\n" +
+			                 $"Waymark Struct:\r\n{rPresetData.AsString()}");
 			return true;
 		}
 
