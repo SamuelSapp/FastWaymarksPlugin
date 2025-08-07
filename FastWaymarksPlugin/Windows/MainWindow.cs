@@ -2,7 +2,7 @@
 using System.Numerics;
 using Dalamud.Interface.Windowing;
 using FFXIVClientStructs.FFXIV.Client.UI.Misc;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.Components;
 using FFXIVClientStructs.FFXIV.Common.Component.BGCollision;
 
