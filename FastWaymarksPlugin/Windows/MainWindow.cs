@@ -47,7 +47,7 @@ public class MainWindow : Window, IDisposable
         {
             if (zoneChanged)
             {
-                var actor = Plugin.ClientState.LocalPlayer;
+                var actor = Plugin.ObjectTable.LocalPlayer;
                 if (actor != null)
                 {
                     if (actor.Position.X < 50.0f && actor.Position.Z < 50.0f)
@@ -138,7 +138,7 @@ public class MainWindow : Window, IDisposable
 
             if (ImGui.Button("Center on Player"))
             {
-                var actor = Plugin.ClientState.LocalPlayer;
+                var actor = Plugin.ObjectTable.LocalPlayer;
                 if (actor != null)
                 {
                     Plugin.Configuration.WaymarksCenterX = actor.Position.X;
@@ -153,7 +153,7 @@ public class MainWindow : Window, IDisposable
 
             if (ImGui.Button("Center to Arena"))
             {
-                var actor = Plugin.ClientState.LocalPlayer;
+                var actor = Plugin.ObjectTable.LocalPlayer;
                 if (actor != null)
                 {
                     if (actor.Position.X < 50.0f && actor.Position.Z < 50.0f)
@@ -286,7 +286,7 @@ public class MainWindow : Window, IDisposable
             var tempZ = calculateZ(i);
             float tempY;
             bool isActive;
-            if (calculateY(i, toPlace, tempX, tempZ, out tempY))
+            if (calculateY(i, toPlace, false, tempX, tempZ, out tempY))
             {
                 isActive = true;
             }
@@ -364,18 +364,19 @@ public class MainWindow : Window, IDisposable
         return tempX;
     }
 
-    private bool calculateY(int idx, bool toPlace, float tempX, float tempZ, out float tempY)
+    private bool calculateY(int idx, bool toPlace, bool isRecursed, float tempX, float tempZ, out float tempY)
     {
         tempY = 0f;
         if (toPlace)
         {
             if (!Plugin.Configuration.displayWaymarkY)
             {
-                var actor = Plugin.ClientState.LocalPlayer;
+                var actor = Plugin.ObjectTable.LocalPlayer;
                 if (actor != null)
                 {
                     tempY = actor.Position.Y;
                     var tempOrigin = new Vector3(tempX, tempY + 20f, tempZ);
+                    Plugin.Log.Verbose($"Waymark {idx} fired from [{tempOrigin.X}, {tempOrigin.Y}, {tempOrigin.Z}]");
                     RaycastHit hitInfo;
                     if (Raycast(tempOrigin, -Vector3.UnitY, out hitInfo))
                     {
@@ -383,16 +384,28 @@ public class MainWindow : Window, IDisposable
                         tempY = hitInfo.Point.Y;
                         if (hitInfo.Distance <= 100f)
                         {
+                            Plugin.Log.Verbose($"Waymark {idx} hit <= 100f");
                             return true;
                         }
                         else
                         {
+                            Plugin.Log.Verbose($"Waymark {idx} hit >= 100f");
                             return false;
                         }
                     }
                     else
                     {
-                        return false;
+                        if (!isRecursed)
+                        {
+                            Plugin.Log.Verbose($"Waymark {idx} didn't hit a target, attempting jiggle");
+                            return calculateY(idx, toPlace, true, tempX + 0.01f, tempZ, out tempY);
+                        }
+                        else
+                        {
+                            Plugin.Log.Verbose($"Waymark {idx} didn't hit a target after jiggling");
+                            return false;
+                        }
+                        
                     }
                 }
             }

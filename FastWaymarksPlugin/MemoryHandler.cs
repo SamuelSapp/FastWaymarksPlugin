@@ -33,7 +33,7 @@ public static class MemoryHandler
 		                 $"Content Link Type is: {currentContentLinkType}\r\n" +
 		                 $"Is Safe to Direct Place: {Plugin.ClientState.LocalPlayer != null && !Plugin.Condition[ConditionFlag.InCombat] && currentContentLinkType is >= 1 and <= 2}");
 		*/
-		return Plugin.ClientState.LocalPlayer != null && !Plugin.Condition[ConditionFlag.InCombat] && currentContentLinkType is >= 1 and <= 2;
+		return Plugin.ObjectTable.LocalPlayer != null && !Plugin.Condition[ConditionFlag.InCombat] && currentContentLinkType is >= 1 and <= 2;
 	}
 
 	public static void PlacePreset(FieldMarkerPreset preset)
