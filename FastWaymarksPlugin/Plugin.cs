@@ -111,7 +111,7 @@ public sealed class Plugin : IDalamudPlugin
         ToggleMainUI();
     }
 
-    private void TerritoryChanged(ushort territoryType)
+    private void TerritoryChanged(uint territoryType)
     {
         Plugin.Log.Debug($"Territory Changed to: {territoryType}");
         MainWindow.UpdateMapID();
